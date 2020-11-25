@@ -14,6 +14,18 @@ jobs:
       - uses: actions/setup-go@v1
         with:
           go-version: '1.14.12'
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          install: true
+          version: latest
+      - name: Set up QEMU
+        id: qemu
+        uses: docker/setup-qemu-action@v1
+        with:
+          image: tonistiigi/binfmt:latest
+          platforms: all
       - uses: actions/checkout@master
         with:
           path: src/github.com/argoproj/argo-cd
@@ -22,21 +34,33 @@ jobs:
       - run: echo ::set-output name=tag::$(cat ./VERSION)-${GITHUB_SHA::8}
         working-directory: ./src/github.com/argoproj/argo-cd
         id: image
-
-      # build
-      - run: |
-          docker images -a --format "{{.ID}}" | xargs -I {} docker rmi {}
-          make image DEV_IMAGE=true DOCKER_PUSH=false IMAGE_NAMESPACE=docker.pkg.github.com/argoproj/argo-cd IMAGE_TAG=${{ steps.image.outputs.tag }}
-        working-directory: ./src/github.com/argoproj/argo-cd
-
-      # publish
-      - run: |
-          docker login docker.pkg.github.com --username $USERNAME --password $PASSWORD
-          docker push docker.pkg.github.com/argoproj/argo-cd/argocd:${{ steps.image.outputs.tag }}
-        env:
-          USERNAME: ${{ secrets.USERNAME }}
-          PASSWORD: ${{ secrets.TOKEN }}
-
+      
+      -
+        name: Login to GitHub Packages Docker Registry
+        uses: docker/login-action@v1
+        with:
+          registry: docker.pkg.github.com
+          username: ${{ secrets.USERNAME }}
+          password: ${{ secrets.TOKEN }}
+      -
+        name: Login to GitHub Packages Docker Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.USERNAME }}
+          password: ${{ secrets.TOKEN }}
+     
+      - name: Build and push
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64,linux/arm/v7,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/argo-cd:${{ steps.image.outputs.tag }}
+            docker.pkg.github.com/argoproj/argo-cd/argocd:${{ steps.image.outputs.tag }}
+          
       # deploy
       - run: git clone "https://$TOKEN@github.com/argoproj/argoproj-deployments"
         env:
