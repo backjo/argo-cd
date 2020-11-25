@@ -92,7 +92,7 @@ FROM node:12.18.4 as argocd-ui
 WORKDIR /src
 ADD ["ui/package.json", "ui/yarn.lock", "./"]
 
-RUN yarn install
+RUN yarn install --network-timeout 600000
 
 ADD ["ui/", "."]
 
