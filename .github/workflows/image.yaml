@@ -55,7 +55,7 @@ jobs:
         with:
           context: ./src/github.com/argoproj/argo-cd
           file: ./src/github.com/argoproj/argo-cd/Dockerfile
-          platforms: linux/amd64,linux/arm/v7,linux/arm64
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: |
             ghcr.io/${{ github.repository_owner }}/argo-cd:${{ steps.image.outputs.tag }}
