@@ -49,7 +49,7 @@ jobs:
           registry: ghcr.io
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.TOKEN }}
-
+          
       - name: Build and push
         uses: docker/build-push-action@v2
         with:
@@ -61,6 +61,17 @@ jobs:
             BUILD_ALL_CLIS=false
           tags: |
             ghcr.io/${{ github.repository_owner }}/argo-cd:${{ steps.image.outputs.tag }}
+            
+      - run: |
+          docker images -a --format "{{.ID}}" | xargs -I {} docker rmi {}
+          make image DEV_IMAGE=true DOCKER_PUSH=false IMAGE_NAMESPACE=docker.pkg.github.com/argoproj/argo-cd IMAGE_TAG=${{ steps.image.outputs.tag }}
+        working-directory: ./src/github.com/argoproj/argo-cd
+      # publish
+      - run: |
+          docker push docker.pkg.github.com/argoproj/argo-cd/argocd:${{ steps.image.outputs.tag }}
+        env:
+          USERNAME: ${{ secrets.USERNAME }}
+          PASSWORD: ${{ secrets.TOKEN }}
           
       # deploy
       - run: git clone "https://$TOKEN@github.com/argoproj/argoproj-deployments"
