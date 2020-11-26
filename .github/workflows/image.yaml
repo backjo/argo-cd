@@ -63,7 +63,6 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/argo-cd:${{ steps.image.outputs.tag }}
             
       - run: |
-          docker images -a --format "{{.ID}}" | xargs -I {} docker rmi {}
           make image DEV_IMAGE=true DOCKER_PUSH=false IMAGE_NAMESPACE=docker.pkg.github.com/argoproj/argo-cd IMAGE_TAG=${{ steps.image.outputs.tag }}
         working-directory: ./src/github.com/argoproj/argo-cd
       # publish
